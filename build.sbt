@@ -1,12 +1,12 @@
 ThisBuild / scalaVersion     := "2.13.10"
 ThisBuild / version          := "0.3.0"
-ThisBuild / organization     := "%ORGANIZATION%"
+ThisBuild / organization     := "ucsc"
 
 val chiselVersion = "3.6.0"
 
 lazy val root = (project in file("."))
   .settings(
-    name := "%NAME%",
+    name := "register-renaming",
     libraryDependencies ++= Seq(
       "edu.berkeley.cs" %% "chisel3" % chiselVersion,
       "edu.berkeley.cs" %% "chiseltest" % "0.6.0" % "test"
