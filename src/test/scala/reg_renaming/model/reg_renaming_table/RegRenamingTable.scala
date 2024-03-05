@@ -46,9 +46,10 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
   }
 
   private def removePrev(ptag: Int): Unit = {
+    // Set Current Entry State as COMMIT
     val entry = _regFile.getRegFileEntry(ptag)
     entry.setRegState(RegFileEntryState.COMMIT)
-
+    // Release the Previous Entry With Same Architectural Register ID
     val prev_ptag = entry.getPrevSameArchId
     val prev_entry = _regFile.getRegFileEntry(prev_ptag)
     prev_entry.setRegState(RegFileEntryState.DEAD)
@@ -56,30 +57,46 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
   }
 
   private def lookupEntry(index: Int): RegFileEntry = {
+    // Get the Latest Physical Register ID (Ptag) through the Register Map
     val ptag = _regMap.getPtag(index)
+    // Get the Physical Entry through the Register File
     _regFile.getRegFileEntry(ptag)
   }
 
   private def readEntry(op: Op, entry: RegFileEntry, index: Int): Unit = {
+    // Write the Physical Register ID (Ptag) Op Src
     val value = entry.getRegPtag
     op.setPtagSrcId(index, value)
   }
 
   private def writeEntry(op: Op, entry: RegFileEntry, index: Int): Unit = {
-    val value = entry.getRegPtag
-    op.setPtagDstId(index, value)
+    // Write the Physical Register ID (Ptag) to Op Dst
+    val ptag = entry.getRegPtag
+    op.setPtagDstId(index, ptag)
+    // Track the Previous Physical Register ID (Ptag) with Same Architectural ID
+    val archId = op.getArchDstId(index)
+    entry.setRegArchId(archId)
+    val prevSameArchId = _regMap.getPtag(archId)
+    entry.setPrevSameArchId(prevSameArchId)
+    // Update the Map to the Latest Physical Register ID (Ptag)
+    _regMap.setPtag(archId, ptag)
   }
 
   private def allocEntry(): RegFileEntry = {
+    // Get a Free Entry From the Free List
     val ptag = _freeList.pop()
-    _regFile.getRegFileEntry(ptag)
+    val entry = _regFile.getRegFileEntry(ptag)
+    // Set the Entry State as ALLOC
+    entry.setRegState(RegFileEntryState.ALLOC)
+    entry
   }
 
   private def releaseEntry(entry: RegFileEntry): Unit = {
+    // Reset the Register Entry
     entry.setRegState(RegFileEntryState.FREE)
     entry.setRegArchId(-1)
     entry.setPrevSameArchId(-1)
-
+    // Return the Free Entry Back to the Free List
     _freeList.push(entry.getRegPtag)
   }
 }
