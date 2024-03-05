@@ -1,5 +1,48 @@
+/** *************************************************************************************
+ * File         : RegFile.scala
+ * Authors      : Yinyuan Zhao, Yan Tong
+ * Date         : 03/04/2024
+ * Description  : Scala implementation of Register File
+ * ************************************************************************************* */
+
 package reg_renaming.model.reg_renaming_table
 
-object RegFile {
+object RegFileEntryState extends Enumeration {
+  val FREE, ALLOC, PRODUCE, COMMIT, DEAD = Value
+}
 
+class RegFileEntry(
+                    private val _regPtag: Int
+                  ) {
+  private var _regArchId: Int
+  private var _prevSameArchId: Int
+  private var _regState: RegFileEntryState
+
+  def getRegPtag: Int = _regPtag
+
+  def getRegArchId: Int = _regArchId
+
+  def setRegArchId(value: Int): Unit = _regArchId = value
+
+  def getPrevSameArchId: Int = _prevSameArchId
+
+  def setPrevSameArchId(value: Int): Unit = _prevSameArchId = value
+
+  def getRegState: RegFileEntryState = _regState
+
+  def setRegState(value: RegFileEntryState): Unit = _regState = value
+}
+
+object RegFile(config: RegRenamingTableConfig) {
+  private var _regFileEntries: Array[RegFileEntry] = Array.ofDim[RegFileEntry](config.ptagNum)
+
+  def getRegFileEntry(index: Int): Int = {
+    require(index >= 0 && index < _regFileEntries.length, "Invalid index for regFileEntries")
+    _regFileEntries(index)
+  }
+
+  def setRegFileEntry(index: Int, value: RegFileEntry): Unit = {
+    require(index >= 0 && index < _regFileEntries.length, "Invalid index for regFileEntries")
+    _regFileEntries(index) = value
+  }
 }

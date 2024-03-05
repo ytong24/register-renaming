@@ -11,28 +11,28 @@ case class OpConfig(numSrcMax: Int, numDstMax: Int, archIdNum: Int);
 
 class Op(
           config: OpConfig,
-          private val numSrc: Int,
-          private val numDst: Int,
-          private val archSrcIds: Array[Int],
-          private val archDstIds: Array[Int],
+          private val _numSrc: Int,
+          private val _numDst: Int,
+          private val _archSrcIds: Array[Int],
+          private val _archDstIds: Array[Int],
         ) {
   // TODO: assert srcId < archIdNum
   // TODO: assert dstId < archIdNum
   private var _ptagSrcIds: Array[Int] = Array.ofDim[Int](config.numSrcMax)
   private var _ptagDstIds: Array[Int] = Array.ofDim[Int](config.numDstMax)
 
-  def getNumSrc: Int = numSrc
+  def getNumSrc: Int = _numSrc
 
-  def getNumDst: Int = numDst
+  def getNumDst: Int = _numDst
 
   def getArchSrcId(index: Int): Int = {
-    require(index >= 0 && index < archSrcIds.length, "Invalid index for archSrcIds")
-    archSrcIds(index)
+    require(index >= 0 && index < _archSrcIds.length, "Invalid index for archSrcIds")
+    _archSrcIds(index)
   }
 
   def getArchDstId(index: Int): Int = {
-    require(index >= 0 && index < archDstIds.length, "Invalid index for archDstIds")
-    archDstIds(index)
+    require(index >= 0 && index < _archDstIds.length, "Invalid index for archDstIds")
+    _archDstIds(index)
   }
 
   def getPtagSrcId(index: Int): Int = {
