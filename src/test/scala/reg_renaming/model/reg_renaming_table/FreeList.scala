@@ -1,5 +1,5 @@
 /** *************************************************************************************
- * File         : RegFile.scala
+ * File         : FreeList.scala
  * Authors      : Yinyuan Zhao, Yan Tong
  * Date         : 03/04/2024
  * Description  : Scala implementation of Free List
