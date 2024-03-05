@@ -9,7 +9,7 @@ package reg_renaming.model.reg_renaming_table
 
 import reg_renaming.model.OpConfig
 
-object RegMap(config: OpConfig) {
+class RegMap(config: OpConfig) {
   private var _regMap: Array[Int] = Array.ofDim[Int](config.numSrcMax)
 
   def getPtag(index: Int): Int = {

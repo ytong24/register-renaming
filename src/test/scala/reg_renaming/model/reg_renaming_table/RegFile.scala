@@ -14,9 +14,9 @@ object RegFileEntryState extends Enumeration {
 class RegFileEntry(
                     private val _regPtag: Int
                   ) {
-  private var _regArchId: Int
-  private var _prevSameArchId: Int
-  private var _regState: RegFileEntryState
+  private var _regArchId: Int = -1
+  private var _prevSameArchId: Int = -1
+  private var _regState: RegFileEntryState.Value = RegFileEntryState.FREE
 
   def getRegPtag: Int = _regPtag
 
@@ -28,15 +28,15 @@ class RegFileEntry(
 
   def setPrevSameArchId(value: Int): Unit = _prevSameArchId = value
 
-  def getRegState: RegFileEntryState = _regState
+  def getRegState: RegFileEntryState.Value = _regState
 
-  def setRegState(value: RegFileEntryState): Unit = _regState = value
+  def setRegState(value: RegFileEntryState.Value): Unit = _regState = value
 }
 
-object RegFile(config: RegRenamingTableConfig) {
+class RegFile(config: RegRenamingTableConfig) {
   private var _regFileEntries: Array[RegFileEntry] = Array.ofDim[RegFileEntry](config.ptagNum)
 
-  def getRegFileEntry(index: Int): Int = {
+  def getRegFileEntry(index: Int): RegFileEntry = {
     require(index >= 0 && index < _regFileEntries.length, "Invalid index for regFileEntries")
     _regFileEntries(index)
   }
