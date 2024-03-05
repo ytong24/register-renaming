@@ -66,17 +66,20 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
   }
 
   private def writeEntry(op: Op, entry: RegFileEntry, index: Int): Unit = {
-    // TODO
-    ???
+    val value = entry.getRegPtag
+    op.setPtagDstId(index, value)
   }
 
   private def allocEntry(): RegFileEntry = {
-    // TODO
-    ???
+    val ptag = _freeList.pop()
+    _regFile.getRegFileEntry(ptag)
   }
 
   private def releaseEntry(entry: RegFileEntry): Unit = {
-    // TODO
-    ???
+    entry.setRegState(RegFileEntryState.FREE)
+    entry.setRegArchId(-1)
+    entry.setPrevSameArchId(-1)
+
+    _freeList.push(entry.getRegPtag)
   }
 }
