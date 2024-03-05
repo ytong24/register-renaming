@@ -2,7 +2,8 @@ package reg_renaming.tester
 
 import chiseltest.ChiselScalatestTester
 import org.scalatest.flatspec.AnyFlatSpec
-import reg_renaming.model.reg_renaming_table.{FreeList, RegFile, RegFileEntry, RegRenamingTableConfig}
+import reg_renaming.model.OpConfig
+import reg_renaming.model.reg_renaming_table.{FreeList, RegFile, RegFileEntry, RegMap, RegRenamingTableConfig}
 
 class ModelTester extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "FreeList"
@@ -101,6 +102,44 @@ class ModelTester extends AnyFlatSpec with ChiselScalatestTester {
 
 
   behavior of "RegMap"
+  it should "initialize with default values" in {
+    val config = OpConfig(numSrcMax = 10, numDstMax = 5, archIdNum = 3)
+    val regMap = new RegMap(config)
+    // Check that all entries are initialized to 0
+    for (i <- 0 until config.numSrcMax) {
+      assert(regMap.getPtag(i) === 0, s"RegMap entry $i should be initialized to 0")
+    }
+  }
 
+  it should "set and get a ptag value correctly" in {
+    val config = OpConfig(numSrcMax = 10, numDstMax = 5, archIdNum = 3)
+    val regMap = new RegMap(config)
+    val testIndex = 3 // Arbitrary index to test
+    val testValue = 42 // Arbitrary value to set
+
+    regMap.setPtag(testIndex, testValue)
+    assert(regMap.getPtag(testIndex) === testValue, s"RegMap entry $testIndex should be $testValue after setPtag")
+  }
+
+  it should "throw an exception for invalid index on getPtag" in {
+    val config = OpConfig(numSrcMax = 10, numDstMax = 5, archIdNum = 3)
+    val regMap = new RegMap(config)
+    val invalidIndex = config.numSrcMax // Index out of bounds
+
+    assertThrows[IllegalArgumentException] {
+      regMap.getPtag(invalidIndex)
+    }
+  }
+
+  it should "throw an exception for invalid index on setPtag" in {
+    val config = OpConfig(numSrcMax = 10, numDstMax = 5, archIdNum = 3)
+    val regMap = new RegMap(config)
+    val invalidIndex = config.numSrcMax // Index out of bounds
+    val testValue = 42 // Arbitrary value to set
+
+    assertThrows[IllegalArgumentException] {
+      regMap.setPtag(invalidIndex, testValue)
+    }
+  }
 
 }
