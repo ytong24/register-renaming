@@ -2,8 +2,8 @@ package reg_renaming.tester
 
 import chiseltest.ChiselScalatestTester
 import org.scalatest.flatspec.AnyFlatSpec
-import reg_renaming.model.OpConfig
-import reg_renaming.model.reg_renaming_table.{FreeList, RegFile, RegFileEntry, RegMap, RegRenamingTableConfig}
+import reg_renaming.OpConfig
+import reg_renaming.model.reg_renaming_table._
 
 class ModelTester extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "FreeList"
@@ -106,7 +106,7 @@ class ModelTester extends AnyFlatSpec with ChiselScalatestTester {
     val config = OpConfig(numSrcMax = 10, numDstMax = 5, archIdNum = 3)
     val regMap = new RegMap(config)
     // Check that all entries are initialized to 0
-    for (i <- 0 until config.numSrcMax) {
+    for (i <- 0 until config.archIdNum) {
       assert(regMap.getPtag(i) === 0, s"RegMap entry $i should be initialized to 0")
     }
   }
@@ -114,7 +114,7 @@ class ModelTester extends AnyFlatSpec with ChiselScalatestTester {
   it should "set and get a ptag value correctly" in {
     val config = OpConfig(numSrcMax = 10, numDstMax = 5, archIdNum = 3)
     val regMap = new RegMap(config)
-    val testIndex = 3 // Arbitrary index to test
+    val testIndex = 2 // Arbitrary index to test
     val testValue = 42 // Arbitrary value to set
 
     regMap.setPtag(testIndex, testValue)
@@ -124,7 +124,7 @@ class ModelTester extends AnyFlatSpec with ChiselScalatestTester {
   it should "throw an exception for invalid index on getPtag" in {
     val config = OpConfig(numSrcMax = 10, numDstMax = 5, archIdNum = 3)
     val regMap = new RegMap(config)
-    val invalidIndex = config.numSrcMax // Index out of bounds
+    val invalidIndex = config.archIdNum // Index out of bounds
 
     assertThrows[IllegalArgumentException] {
       regMap.getPtag(invalidIndex)
@@ -134,7 +134,7 @@ class ModelTester extends AnyFlatSpec with ChiselScalatestTester {
   it should "throw an exception for invalid index on setPtag" in {
     val config = OpConfig(numSrcMax = 10, numDstMax = 5, archIdNum = 3)
     val regMap = new RegMap(config)
-    val invalidIndex = config.numSrcMax // Index out of bounds
+    val invalidIndex = config.archIdNum // Index out of bounds
     val testValue = 42 // Arbitrary value to set
 
     assertThrows[IllegalArgumentException] {
