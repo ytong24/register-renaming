@@ -4,6 +4,7 @@ import chiseltest.ChiselScalatestTester
 import org.scalatest.flatspec.AnyFlatSpec
 import reg_renaming.OpConfig
 import reg_renaming.model.reg_renaming_table._
+import reg_renaming.reg_renaming_table.RegRenamingTableConfig
 
 class ModelTester extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "FreeList"

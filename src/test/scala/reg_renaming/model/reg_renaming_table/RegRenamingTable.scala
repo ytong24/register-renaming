@@ -9,8 +9,9 @@ package reg_renaming.model.reg_renaming_table
 
 import reg_renaming.OpConfig
 import reg_renaming.model.Op
+import reg_renaming.reg_renaming_table.RegRenamingTableConfig
 
-case class RegRenamingTableConfig(ptagNum: Int)
+
 
 class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) {
   private var _regMap = new RegMap(opConfig)

@@ -7,6 +7,8 @@
 
 package reg_renaming.model.reg_renaming_table
 
+import reg_renaming.reg_renaming_table.RegRenamingTableConfig
+
 import scala.collection.mutable
 
 class FreeList(config: RegRenamingTableConfig) {
