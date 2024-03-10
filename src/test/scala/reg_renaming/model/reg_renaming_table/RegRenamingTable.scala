@@ -7,7 +7,8 @@
 
 package reg_renaming.model.reg_renaming_table
 
-import reg_renaming.model.{Op, OpConfig}
+import reg_renaming.OpConfig
+import reg_renaming.model.Op
 
 case class RegRenamingTableConfig(ptagNum: Int)
 

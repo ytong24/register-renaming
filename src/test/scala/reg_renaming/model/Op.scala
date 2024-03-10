@@ -7,7 +7,7 @@
 
 package reg_renaming.model
 
-case class OpConfig(numSrcMax: Int, numDstMax: Int, archIdNum: Int)
+import reg_renaming.OpConfig
 
 class Op(
           config: OpConfig,
