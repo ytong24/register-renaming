@@ -3,9 +3,9 @@ package reg_renaming.tester
 import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
-import reg_renaming.reg_renaming_table.{FreeList, RegFile, RegFileEntryState}
+import reg_renaming.reg_renaming_table.{FreeList, RegFile, RegFileEntryState, RegMap}
 
-class ChiselTester extends AnyFlatSpec with ChiselScalatestTester{
+class ChiselTester extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "FreeList"
   it should "be initialized with the correct size" in {
     test(new FreeList(ptagNum = 5)) { dut =>
@@ -104,6 +104,35 @@ class ChiselTester extends AnyFlatSpec with ChiselScalatestTester{
       dut.io.readValue.regArchId.expect(2.U, "Set RegFileEntry should have a regArchId of 30")
       dut.io.readValue.prevSameArchId.expect(1.U, "Set RegFileEntry should have a prevSameArchId of 40")
       dut.io.readValue.regState.expect(RegFileEntryState.COMMIT, "Set RegFileEntry should be in COMMIT state")
+    }
+  }
+
+
+  behavior of "RegMap"
+  it should "initialize with default values" in {
+    test(new RegMap(archIdNum = 3)) { dut =>
+      for (i <- 0 until 3) {
+        dut.io.readIndex.poke(i.U)
+        dut.clock.step()
+        dut.io.readData.expect(0.U, s"RegMap entry $i should be initialized to 0")
+      }
+    }
+  }
+
+  it should "set and get a ptag value correctly" in {
+    test(new RegMap(archIdNum = 3)) { dut =>
+      val testIndex = 2.U // Arbitrary index to test
+      val testValue = 1.U // Arbitrary value to set
+
+      dut.io.writeEnable.poke(true.B)
+      dut.io.writeIndex.poke(testIndex)
+      dut.io.writeData.poke(testValue)
+      dut.clock.step()
+      dut.io.writeEnable.poke(false.B)
+
+      dut.io.readIndex.poke(testIndex)
+      dut.clock.step()
+      dut.io.readData.expect(testValue, s"RegMap entry $testIndex should be $testValue after setPtag")
     }
   }
 }
