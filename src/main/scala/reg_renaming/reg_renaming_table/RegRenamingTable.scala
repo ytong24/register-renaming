@@ -10,6 +10,10 @@ object OpProcessState extends ChiselEnum {
   val idle, readSrc, writeDst, done = Value
 }
 
+object OpCommitState extends ChiselEnum {
+  val idle, commit = Value
+}
+
 class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) extends Module {
   val io = IO {
     new Bundle {
@@ -43,6 +47,7 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
 
   /** helper variables for helper functions */
   private val opProcessState = RegInit(OpProcessState.idle)
+  private val opCommitState = RegInit(OpCommitState.idle)
   private val srcIndex = RegInit(0.U(log2Ceil(opConfig.numSrcMax).W))
   private val dstIndex = RegInit(0.U(log2Ceil(opConfig.numDstMax).W))
 
@@ -135,8 +140,7 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
     // Get the entry from regFile
     regFile.io.index := ptag
     regFile.io.writeEnable := false.B
-    //  not sure if we need to do this: val entry = Wire(new RegFileEntry(log2Ceil(config.numDstMax)))
-    val entry = regFile.io.readValue
+    val entry = Wire(new RegFileEntry(log2Ceil(opConfig.numDstMax)))
 
     // Set the entry state as ALLOC
     entry.regState := RegFileEntryState.ALLOC
@@ -170,7 +174,61 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
 
   /** helper functions for op commit * */
   def commitOp(op: Op): Bool = {
-    true.B
+    val commitDone = Wire(Bool())
+    commitDone := false.B
+
+    switch(opCommitState) {
+      is(OpCommitState.idle) {
+        opCommitState := OpCommitState.commit
+        dstIndex := 0.U
+      }
+
+      is(OpCommitState.commit) {
+        when(dstIndex < op.numDst) {
+          val ptag = op.ptagDstIds(dstIndex)
+          removePrev(ptag)
+          dstIndex := dstIndex + 1.U
+        }.otherwise {
+          opCommitState := OpCommitState.idle
+          commitDone := true.B
+        }
+      }
+    }
+
+    commitDone
+  }
+
+  private def removePrev(ptag: UInt): Unit = {
+    // Set current entry state as COMMIT
+    regFile.io.index := ptag
+    regFile.io.writeEnable := true.B
+    val entry = Wire(new RegFileEntry(log2Ceil(opConfig.numDstMax)))
+    entry := regFile.io.readValue
+    entry.regState := RegFileEntryState.COMMIT
+    regFile.io.writeValue := entry
+
+    // Release the previous entry with the same architectural register ID
+    val prevPtag = entry.prevSameArchId
+    regFile.io.index := prevPtag
+    val prevEntry = Wire(new RegFileEntry(log2Ceil(opConfig.numDstMax)))
+    prevEntry := regFile.io.readValue
+    prevEntry.regState := RegFileEntryState.DEAD
+    regFile.io.writeValue := prevEntry
+    releaseEntry(prevEntry)
+  }
+
+  private def releaseEntry(entry: RegFileEntry): Unit = {
+    // Reset the register entry
+    entry.regState := RegFileEntryState.FREE
+    entry.regArchId := 0.U
+    entry.prevSameArchId := 0.U
+    regFile.io.index := entry.regPtag
+    regFile.io.writeValue := entry
+    regFile.io.writeEnable := true.B
+
+    // Return the free entry back to the free list
+    freeList.io.push := true.B
+    freeList.io.ptagToPush := entry.regPtag
   }
 
 }
