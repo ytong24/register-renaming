@@ -9,20 +9,20 @@ object RegFileEntryState extends ChiselEnum {
 
 class RegFileEntry(w: Int) extends Bundle {
   val regPtag = UInt(w.W)
-  val regArchId = RegInit(0.U(w.W))
-  val prevSameArchId = RegInit(0.U(w.W))
-  val regState = RegInit(RegFileEntryState.FREE)
+  val regArchId = UInt(w.W)
+  val prevSameArchId = UInt(w.W)
+  val regState = RegFileEntryState()
 }
 
-class RegFile(ptagNum: Int, w: Int) extends Module {
+class RegFile(ptagNum: Int) extends Module {
   val io = IO(new Bundle {
     val index = Input(UInt(log2Ceil(ptagNum).W))
     val writeEnable = Input(Bool())
-    val writeValue = Input(new RegFileEntry(w))
-    val readValue = Output(new RegFileEntry(w))
+    val writeValue = Input(new RegFileEntry(log2Ceil(ptagNum)))
+    val readValue = Output(new RegFileEntry(log2Ceil(ptagNum)))
   })
 
-  val regFileEntries = Reg(Vec(ptagNum, new RegFileEntry(w)))
+  val regFileEntries = Reg(Vec(ptagNum, new RegFileEntry(log2Ceil(ptagNum))))
 
   io.readValue := regFileEntries(io.index)
 
