@@ -18,15 +18,15 @@ class FreeList(val ptagNum: Int) extends Module {
 
   // Push operation
   when(io.push && !io.pop && pointer =/= 0.U) {
-    stack(pointer - 1.U) := io.ptagToPush
-    pointer := pointer - 1.U
+    stack(pointer -& 1.U) := io.ptagToPush
+    pointer := pointer -& 1.U
   }
 
   // Pop operation
   io.ptagPopped := 0.U // Default value
   when(io.pop && !io.push && pointer =/= ptagNum.U) {
     io.ptagPopped := stack(pointer)
-    pointer := pointer + 1.U
+    pointer := pointer +& 1.U
   }
 
   // Update size
