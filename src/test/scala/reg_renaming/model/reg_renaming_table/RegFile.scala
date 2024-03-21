@@ -38,13 +38,12 @@ class RegFileEntry(
 class RegFile(config: RegRenamingTableConfig) {
   private var _regFileEntries: Array[RegFileEntry] = Array.ofDim[RegFileEntry](config.ptagNum)
 
+  for (i <- _regFileEntries.indices) {
+    _regFileEntries(i) = new RegFileEntry(i)
+  }
+
   def getRegFileEntry(index: Int): RegFileEntry = {
     require(index >= 0 && index < _regFileEntries.length, "Invalid index for regFileEntries")
     _regFileEntries(index)
-  }
-
-  def setRegFileEntry(index: Int, value: RegFileEntry): Unit = {
-    require(index >= 0 && index < _regFileEntries.length, "Invalid index for regFileEntries")
-    _regFileEntries(index) = value
   }
 }

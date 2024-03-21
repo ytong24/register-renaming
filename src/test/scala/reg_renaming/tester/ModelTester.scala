@@ -3,6 +3,7 @@ package reg_renaming.tester
 import chiseltest.ChiselScalatestTester
 import org.scalatest.flatspec.AnyFlatSpec
 import reg_renaming.OpConfig
+import reg_renaming.model.Op
 import reg_renaming.model.reg_renaming_table._
 import reg_renaming.reg_renaming_table.RegRenamingTableConfig
 
@@ -61,7 +62,6 @@ class ModelTester extends AnyFlatSpec with ChiselScalatestTester {
     val freeList = new FreeList(config)
 
     freeList.pop()
-
     freeList.push(0)
 
     intercept[IllegalArgumentException] {
@@ -71,22 +71,13 @@ class ModelTester extends AnyFlatSpec with ChiselScalatestTester {
 
 
   behavior of "RegFile"
-  it should "return a valid RegFileEntry for a valid index" in {
-    val regFile = new RegFile(RegRenamingTableConfig(ptagNum = 5))
-    val entry = new RegFileEntry(_regPtag = 1)
-    regFile.setRegFileEntry(0, entry)
-    // get and check
-    val retrievedEntry = regFile.getRegFileEntry(0)
-    assert(retrievedEntry.getRegPtag == 1, "Retrieved RegFileEntry should have a regPtag of 1")
-  }
-
-  it should "correctly set a RegFileEntry at a specific index" in {
-    val regFile = new RegFile(RegRenamingTableConfig(ptagNum = 5))
-    val newEntry = new RegFileEntry(_regPtag = 2)
-    regFile.setRegFileEntry(1, newEntry)
-
-    val setEntry = regFile.getRegFileEntry(1)
-    assert(setEntry.getRegPtag == 2, "Set RegFileEntry should have a regPtag of 2")
+  it should "each RegFileEntry have a correct ptag" in {
+    val regFile = new RegFile(RegRenamingTableConfig(ptagNum = 4))
+    for (i <- 0 until 4) {
+      val entry = regFile.getRegFileEntry(i)
+      assert(entry.getRegPtag == i)
+      assert(entry.getRegState == RegFileEntryState.FREE)
+    }
   }
 
   it should "throw an exception for an invalid index" in {
@@ -96,11 +87,7 @@ class ModelTester extends AnyFlatSpec with ChiselScalatestTester {
     assertThrows[IllegalArgumentException] {
       regFile.getRegFileEntry(6)
     }
-    assertThrows[IllegalArgumentException] {
-      regFile.setRegFileEntry(6, new RegFileEntry(_regPtag = 3))
-    }
   }
-
 
   behavior of "RegMap"
   it should "initialize with default values" in {
@@ -143,4 +130,27 @@ class ModelTester extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 
+  behavior of "RegRenamingTable"
+  it should "available before alloc" in {
+    val opConfig = OpConfig(numSrcMax = 2, numDstMax = 2, archIdNum = 4)
+    val tableConfig = RegRenamingTableConfig(ptagNum = 8)
+    val renamingTable = new RegRenamingTable(tableConfig, opConfig)
+
+    val opInstance = new Op(opConfig, 0, 2, Array(), Array(0, 1))
+    assert(renamingTable.available())
+    renamingTable.process(opInstance)
+  }
+
+  it should "full when alloc all" in {
+    val opConfig = OpConfig(numSrcMax = 2, numDstMax = 2, archIdNum = 4)
+    val tableConfig = RegRenamingTableConfig(ptagNum = 8)
+    val renamingTable = new RegRenamingTable(tableConfig, opConfig)
+
+    val opInstance = new Op(opConfig, 0, 2, Array(), Array(0, 1))
+    for (i <- 0 until 4) {
+      assert(renamingTable.available())
+      renamingTable.process(opInstance)
+    }
+    assert(!renamingTable.available())
+  }
 }
