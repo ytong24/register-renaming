@@ -67,7 +67,7 @@ class ChiselTester extends AnyFlatSpec with ChiselScalatestTester {
   it should "pop the correct values in sequence" in {
     test(new FreeList(ptagNum = 5)) { dut =>
       // pop 3 values
-      for (i <- 1 to 3) {
+      for (i <- 0 until  3) {
         dut.io.push.poke(false.B)
         dut.io.pop.poke(true.B)
         dut.clock.step()
@@ -174,8 +174,8 @@ class ChiselTester extends AnyFlatSpec with ChiselScalatestTester {
         print("==========\n")
       }
 
-      dut.io.op.ptagDstIds(0).expect(1.U) // ptag 1
-      dut.io.op.ptagDstIds(1).expect(2.U) // ptag 2
+      dut.io.op.ptagDstIds(0).expect(0.U) // p0
+      dut.io.op.ptagDstIds(1).expect(1.U) // p1
     }
   }
 
@@ -193,8 +193,8 @@ class ChiselTester extends AnyFlatSpec with ChiselScalatestTester {
         dut.clock.step()
         print("==========\n")
       }
-      dut.io.op.ptagDstIds(0).expect(1.U) // p1
-      dut.io.op.ptagDstIds(1).expect(2.U) // p2
+      dut.io.op.ptagDstIds(0).expect(0.U) // p0
+      dut.io.op.ptagDstIds(1).expect(1.U) // p1
 
       // Wait for a clock cycle before starting the next operation
       dut.clock.step()
@@ -214,9 +214,9 @@ class ChiselTester extends AnyFlatSpec with ChiselScalatestTester {
         print("==========\n")
       }
 
-      dut.io.op.ptagSrcIds(0).expect(1.U) // p1
-      dut.io.op.ptagSrcIds(1).expect(2.U) // p2
-      dut.io.op.ptagDstIds(0).expect(3.U) // p3
+      dut.io.op.ptagSrcIds(0).expect(0.U) // p0
+      dut.io.op.ptagSrcIds(1).expect(1.U) // p1
+      dut.io.op.ptagDstIds(0).expect(2.U) // p2
     }
   }
 

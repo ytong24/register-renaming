@@ -7,15 +7,15 @@ class FreeList(val ptagNum: Int) extends Module {
   val io = IO(new Bundle {
     val push = Input(Bool())
     val pop = Input(Bool())
-    val ptagToPush = Input(UInt(log2Ceil(ptagNum).W))
-    val ptagPopped = Output(UInt(log2Ceil(ptagNum).W))
+    val ptagToPush = Input(UInt(log2Ceil(ptagNum + 1).W))
+    val ptagPopped = Output(UInt(log2Ceil(ptagNum + 1).W))
     val size = Output(UInt(log2Ceil(ptagNum + 1).W))
   })
-
-  // elements should be 1..ptagNum
-  val stack = RegInit(VecInit((1 to ptagNum).map(_.U(log2Ceil(ptagNum + 1).W))))
+  // elements should be 0..ptagNum-1, make ptagNum the invalid value
+  val invalidPopValue = ptagNum.U(log2Ceil(ptagNum + 1).W)
+  val stack = RegInit(VecInit((0 until ptagNum).map(_.U(log2Ceil(ptagNum + 1).W))))
   val pointer = RegInit(0.U(log2Ceil(ptagNum + 1).W))
-  val popValue = RegInit(0.U(log2Ceil(ptagNum + 1).W))
+  val popValue = RegInit(invalidPopValue)
 
   // Push operation
   when(io.push && !io.pop && pointer > 0.U) {
