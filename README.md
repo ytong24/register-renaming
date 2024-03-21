@@ -6,7 +6,7 @@
 
 <h2>Verification</h2>
 <h3>Testing</h3>
-   Do the following command to run the test cases: 
+   Do the following command to run the test cases: <br>
    ```bash
    sbt test
    ```
@@ -46,5 +46,5 @@
       </ul>
 
 <h2>License</h2>
-This Project is under license from MIT.
+This Project is under license from MIT. <br>
 Made by Yan Tong and Yinyuan Zhao for CSE 228A - Agile Hardware Design
