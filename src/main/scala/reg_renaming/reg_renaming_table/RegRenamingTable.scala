@@ -150,7 +150,7 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
   }
 
   private def readSrc(op: Op, srcIndex: UInt): Unit = {
-    val ptag = Reg(UInt(log2Ceil(opConfig.numDstMax).W))
+    val readSrcPtag = Reg(UInt(log2Ceil(opConfig.numDstMax+1).W))
     val entry = Reg(new RegFileEntry(log2Ceil(opConfig.numDstMax)))
 
     switch(readSrcState) {
@@ -165,20 +165,20 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
         val archSrcId = op.archSrcIds(srcIndex)
         printf(p"archSrcId: ${archSrcId}\n")
         printf(p"op.archSrcIds: ${op.archSrcIds}\n")
-        findPtag(archSrcId, ptag)
+        findPtag(archSrcId, readSrcPtag)
         readSrcState := ReadSrcState.getEntry
         printf(p"readSrcState transition: findPtag -> getEntry\n")
       }
 
       is(ReadSrcState.getEntry) {
-        printf(p"ptag: ${ptag}\n")
-        entry := getEntry(ptag)
+        printf(p"ptag: ${readSrcPtag}\n")
+        entry := getEntry(readSrcPtag)
         readSrcState := ReadSrcState.readEntry
         printf(p"readSrcState transition: getEntry -> readEntry\n")
       }
 
       is(ReadSrcState.readEntry) {
-        readEntry(srcIndex, ptag)
+        readEntry(srcIndex, readSrcPtag)
         srcIndex := srcIndex +& 1.U
         readSrcState := ReadSrcState.idle
         printf(p"readSrcState transition: readEntry -> idle\n")
@@ -199,7 +199,7 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
 
 
   private def writeDst(op: Op, dstIndex: UInt): Unit = {
-    val ptag = Reg(UInt(log2Ceil(opConfig.numDstMax + 1).W))
+    val writeDstPtag = Reg(UInt(log2Ceil(opConfig.numDstMax + 1).W))
     val entry = Reg(new RegFileEntry(log2Ceil(opConfig.numDstMax)))
 
     switch(writeDstState) {
@@ -208,26 +208,26 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
           writeDstState := WriteDstState.newPtag
           freeListPush := false.B
           freeListPop := true.B
-          ptag := 0.U
+          writeDstPtag := 0.U
           printf(p"writeDstState transition: idle -> newPtag\n")
         }
       }
 
       is(WriteDstState.newPtag) {
-        ptag := freeList.io.ptagPopped
+        writeDstPtag := freeList.io.ptagPopped
         writeDstState := WriteDstState.getEntry
         printf(p"writeDstState transition: newPtag -> getEntry\n")
       }
 
       is(WriteDstState.getEntry) {
-        printf(p"ptag: ${ptag}\n")
-        entry := getEntry(ptag)
+        printf(p"ptag: ${writeDstPtag}\n")
+        entry := getEntry(writeDstPtag)
         writeDstState := WriteDstState.writeEntry
         printf(p"writeDstState transition: getEntry -> writeEntry\n")
       }
 
       is(WriteDstState.writeEntry) {
-        writeEntry(op, entry, dstIndex, ptag)
+        writeEntry(op, entry, dstIndex, writeDstPtag)
         dstIndex := dstIndex +& 1.U
         writeDstState := WriteDstState.idle
         printf(p"writeDstState transition: writeEntry -> idle\n")

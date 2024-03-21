@@ -214,9 +214,9 @@ class ChiselTester extends AnyFlatSpec with ChiselScalatestTester {
         print("==========\n")
       }
 
-      dut.io.op.ptagSrcIds(0).expect(1.U) // p0
-      dut.io.op.ptagSrcIds(1).expect(2.U) // p1
-      dut.io.op.ptagDstIds(0).expect(3.U) // p2
+      dut.io.op.ptagSrcIds(0).expect(1.U) // p1
+      dut.io.op.ptagSrcIds(1).expect(2.U) // p2
+      dut.io.op.ptagDstIds(0).expect(3.U) // p3
     }
   }
 
