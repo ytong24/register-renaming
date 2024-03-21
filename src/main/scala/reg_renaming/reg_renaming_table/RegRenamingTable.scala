@@ -1,18 +1,24 @@
+/** *************************************************************************************
+ * File         : RegRenamingTable.scala
+ * Authors      : Yinyuan Zhao, Yan Tong
+ * Date         : 03/04/2024
+ * Description  : Chisel implementation of Register Renaming Table
+ * ************************************************************************************* */
+
 package reg_renaming.reg_renaming_table
 
 import chisel3._
-import chisel3.util._
 import chisel3.experimental.ChiselEnum
+import chisel3.util._
 import reg_renaming.{Op, OpConfig}
 
 case class RegRenamingTableConfig(ptagNum: Int)
 
+/**
+ * Enumeration for operation process states.
+ */
 object OpProcessState extends ChiselEnum {
   val idle, readSrc, writeDst, done = Value
-}
-
-object OpCommitState extends ChiselEnum {
-  val idle, commit = Value
 }
 
 object ReadSrcState extends ChiselEnum {
@@ -22,6 +28,14 @@ object ReadSrcState extends ChiselEnum {
 object WriteDstState extends ChiselEnum {
   val idle, newPtag, getEntry, writeEntry = Value
 }
+
+/**
+ * Enumeration for operation commit states.
+ */
+object OpCommitState extends ChiselEnum {
+  val idle, commit = Value
+}
+
 
 class RegRenamingTableIO(opConfig: OpConfig) extends Bundle {
   val op = new Op(opConfig)
@@ -33,16 +47,18 @@ class RegRenamingTableIO(opConfig: OpConfig) extends Bundle {
 class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) extends Module {
   val io = IO(new RegRenamingTableIO(opConfig))
 
+  // Instantiation of submodules
   val regMap = Module(new RegMap(opConfig.archIdNum, tableConfig.ptagNum))
   val regFile = Module(new RegFile(opConfig.archIdNum, tableConfig.ptagNum))
   val freeList = Module(new FreeList(tableConfig.ptagNum))
 
+  // Registers for ptag IDs and states
   val ptagSrcIds = RegInit(VecInit(Seq.fill(opConfig.numSrcMax)(0.U(log2Ceil(tableConfig.ptagNum + 1).W))))
   val ptagDstIds = RegInit(VecInit(Seq.fill(opConfig.numDstMax)(0.U(log2Ceil(tableConfig.ptagNum + 1).W))))
-
   val ioDone = RegInit(false.B)
   val ioAvailable = RegInit(false.B)
 
+  // Initialize output signals
   io.done := ioDone
   io.available := ioAvailable
   io.op.ptagSrcIds := ptagSrcIds
@@ -53,7 +69,6 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
   val regMapWriteEnable = WireDefault(Bool(), false.B)
   val regMapWriteIndex = WireDefault(UInt(log2Ceil(opConfig.archIdNum + 1).W), 0.U)
   val regMapWriteData = WireDefault(UInt(log2Ceil(opConfig.archIdNum + 1).W), 0.U)
-
   regMap.io.readIndex := regMapReadIndex
   regMap.io.writeEnable := regMapWriteEnable
   regMap.io.writeIndex := regMapWriteIndex
@@ -66,7 +81,6 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
   freeListPush := false.B
   freeListPop := false.B
   freeListPtagToPush := 0.U
-
   freeList.io.push := freeListPush
   freeList.io.pop := freeListPop
   freeList.io.ptagToPush := freeListPtagToPush
@@ -74,16 +88,13 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
   /** initialize regFile */
   val regFileIndex = Wire(UInt(log2Ceil(tableConfig.ptagNum + 1).W))
   regFileIndex := 0.U
-
   val regFileWriteEnable = Wire(Bool())
   regFileWriteEnable := false.B
-
   val regFileWriteValue = Wire(new RegFileEntry(log2Ceil(opConfig.archIdNum), log2Ceil(tableConfig.ptagNum)))
   regFileWriteValue.regPtag := 0.U
   regFileWriteValue.regArchId := 0.U
   regFileWriteValue.prevSameArchId := 0.U
   regFileWriteValue.regState := RegFileEntryState.FREE
-
   regFile.io.index := regFileIndex
   regFile.io.writeEnable := regFileWriteEnable
   regFile.io.writeValue := regFileWriteValue
@@ -112,7 +123,9 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
   }
 
 
-  /** helper functions for op process */
+  /**
+   * Processes an operation by reading source registers, allocating destination registers, and updating the register map.
+   */
   private def processOp(op: Op): Unit = {
     switch(opProcessState) {
       is(OpProcessState.idle) {
@@ -122,7 +135,7 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
         srcIndex := 0.U
         dstIndex := 0.U
       }
-
+      // Read source registers
       is(OpProcessState.readSrc) {
         readSrc(op, srcIndex)
         when(srcIndex === op.numSrc) {
@@ -130,7 +143,7 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
           srcIndex := 0.U
         }
       }
-
+      // Allocate and write destination registers
       is(OpProcessState.writeDst) {
         writeDst(op, dstIndex)
         when(dstIndex === op.numDst) {
@@ -146,6 +159,9 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
     }
   }
 
+  /**
+   * Reads a source register for an operation and updates the corresponding ptag in the operation bundle.
+   */
   private def readSrc(op: Op, srcIndex: UInt): Unit = {
     val readSrcPtag = Reg(UInt(log2Ceil(opConfig.numDstMax + 1).W))
     val entry = Reg(new RegFileEntry(log2Ceil(opConfig.archIdNum), log2Ceil(opConfig.numDstMax)))
@@ -188,6 +204,9 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
   }
 
 
+  /**
+   * Allocates a destination register for an operation and updates the corresponding ptag in the operation bundle.
+   */
   private def writeDst(op: Op, dstIndex: UInt): Unit = {
     val writeDstPtag = Reg(UInt(log2Ceil(opConfig.numDstMax + 1).W))
     val entry = Reg(new RegFileEntry(log2Ceil(opConfig.archIdNum), log2Ceil(opConfig.numDstMax)))
@@ -259,7 +278,9 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
     regFileWriteEnable := true.B
   }
 
-  /** helper functions for op commit * */
+  /**
+   * Commits an operation by updating the register map and releasing any overwritten physical registers.
+   */
   def commitOp(op: Op): Unit = {
     ioDone := false.B
 
