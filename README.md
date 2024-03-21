@@ -6,12 +6,12 @@
 
 <h2>Verification</h2>
 <h3>Testing</h3>
-Do the following command to run the test cases: 
-```dtd
-sbt test
-```
+   Do the following command to run the test cases: 
+   ```bash
+   sbt test
+   ```
 <h3>Scenario</h3>
-FETCH -> <b>RENAMING</b> -> ISSUE -> EXECUTE -> COMMIT
+   <li>FETCH -> <b>RENAMING</b> -> ISSUE -> EXECUTE -> COMMIT
 
 <h2>Design</h2>
    <h3>Structure</h3>
@@ -44,3 +44,7 @@ FETCH -> <b>RENAMING</b> -> ISSUE -> EXECUTE -> COMMIT
             </ul>
         </li>
       </ul>
+
+<h2>License</h2>
+This Project is under license from MIT.
+Made by Yan Tong and Yinyuan Zhao for CSE 228A - Agile Hardware Design
