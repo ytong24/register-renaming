@@ -33,6 +33,18 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
     }
   }
 
+  def getRegMap: RegMap = {
+    _regMap
+  }
+
+  def getRegFile: RegFile = {
+    _regFile
+  }
+
+  def getFreeList: FreeList = {
+    _freeList
+  }
+
   private def readSrc(op: Op): Unit = {
     for (index <- 0 until op.getNumSrc) {
       val entry = lookupEntry(op.getArchSrcId(index))
@@ -50,6 +62,7 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
   private def removePrev(ptag: Int): Unit = {
     // Set Current Entry State as COMMIT
     val entry = _regFile.getRegFileEntry(ptag)
+    require(entry.getRegState == RegFileEntryState.ALLOC)
     entry.setRegState(RegFileEntryState.COMMIT)
     // Release the Previous Entry With Same Architectural Register ID
     val prev_ptag = entry.getPrevSameArchId
@@ -68,12 +81,14 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
   private def readEntry(op: Op, entry: RegFileEntry, index: Int): Unit = {
     // Write the Physical Register ID (Ptag) Op Src
     val value = entry.getRegPtag
+    require(op.getPtagSrcId(index) == -1)
     op.setPtagSrcId(index, value)
   }
 
   private def writeEntry(op: Op, entry: RegFileEntry, index: Int): Unit = {
     // Write the Physical Register ID (Ptag) to Op Dst
     val ptag = entry.getRegPtag
+    require(op.getPtagDstId(index) == -1)
     op.setPtagDstId(index, ptag)
     // Track the Previous Physical Register ID (Ptag) with Same Architectural ID
     val archId = op.getArchDstId(index)
@@ -89,6 +104,7 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
     val ptag = _freeList.pop()
     val entry = _regFile.getRegFileEntry(ptag)
     // Set the Entry State as ALLOC
+    require(entry.getRegState == RegFileEntryState.FREE)
     entry.setRegState(RegFileEntryState.ALLOC)
     entry
   }

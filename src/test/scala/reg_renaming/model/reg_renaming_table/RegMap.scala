@@ -11,6 +11,9 @@ import reg_renaming.OpConfig
 
 class RegMap(config: OpConfig) {
   private var _regMap: Array[Int] = Array.ofDim[Int](config.archIdNum)
+  for (i <- _regMap.indices) {
+    _regMap(i) = -1
+  }
 
   def getPtag(index: Int): Int = {
     require(index >= 0 && index < _regMap.length, "Invalid index for regMap")
