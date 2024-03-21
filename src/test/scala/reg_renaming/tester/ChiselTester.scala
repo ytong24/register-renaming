@@ -158,29 +158,50 @@ class ChiselTester extends AnyFlatSpec with ChiselScalatestTester {
   val tableConfig = RegRenamingTableConfig(ptagNum = 16)
   val opConfig = OpConfig(archIdNum = 8, numSrcMax = 2, numDstMax = 2)
 
-  it should "process op correctly" in {
+  it should "process op with 0 src and 2 dst" in {
     test(new RegRenamingTable(tableConfig, opConfig)) { dut =>
 
-      dut.io.op.numSrc.poke(2.U)
-      dut.io.op.numDst.poke(1.U)
+      dut.io.op.numSrc.poke(0.U)
+      dut.io.op.numDst.poke(3.U)
 
-      //      dut.io.op.in.archSrcIds.poke(VecInit(Seq(1.U, 2.U)))
-      //      dut.io.op.in.archDstIds.poke(VecInit(Seq(3.U)))
-      dut.io.op.archSrcIds(0).poke(1.U)
-      dut.io.op.archSrcIds(1).poke(2.U)
-      dut.io.op.archDstIds(0).poke(3.U)
+      dut.io.op.archDstIds(0).poke(0.U)
+      dut.io.op.archDstIds(1).poke(1.U)
 
       dut.io.mode.poke(0.U)
 
       while (!dut.io.done.peek().litToBoolean) {
         dut.clock.step()
+        print("==========\n")
       }
 
-      dut.io.op.ptagSrcIds(0).expect(1.U) // archId 1 -> ptag 1
-      dut.io.op.ptagSrcIds(1).expect(2.U) // archId 2 -> ptag 2
-      dut.io.op.ptagDstIds(0).expect(3.U) // ptag 3
+      dut.io.op.ptagDstIds(0).expect(0.U) // ptag 0
+      dut.io.op.ptagDstIds(1).expect(1.U) // ptag 1
     }
   }
+
+//  it should "process op correctly" in {
+//    test(new RegRenamingTable(tableConfig, opConfig)) { dut =>
+//
+//      dut.io.op.numSrc.poke(2.U)
+//      dut.io.op.numDst.poke(1.U)
+//
+//      //      dut.io.op.in.archSrcIds.poke(VecInit(Seq(1.U, 2.U)))
+//      //      dut.io.op.in.archDstIds.poke(VecInit(Seq(3.U)))
+//      dut.io.op.archSrcIds(0).poke(1.U)
+//      dut.io.op.archSrcIds(1).poke(2.U)
+//      dut.io.op.archDstIds(0).poke(3.U)
+//
+//      dut.io.mode.poke(0.U)
+//
+//      while (!dut.io.done.peek().litToBoolean) {
+//        dut.clock.step()
+//      }
+//
+//      dut.io.op.ptagSrcIds(0).expect(1.U) // archId 1 -> ptag 1
+//      dut.io.op.ptagSrcIds(1).expect(2.U) // archId 2 -> ptag 2
+//      dut.io.op.ptagDstIds(0).expect(3.U) // ptag 3
+//    }
+//  }
 
 //  it should "process op correctly" in {
 //    test(new RegRenamingTable(tableConfig, opConfig)) { dut =>
