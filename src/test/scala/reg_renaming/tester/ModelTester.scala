@@ -225,4 +225,36 @@ class ModelTester extends AnyFlatSpec with ChiselScalatestTester {
     assert(regFile.getRegFileEntry(2).getRegPtag == 2)
     assert(regFile.getRegFileEntry(2).getPrevSameArchId == 1)
   }
+
+  it should "remove previous same architectural register when commit current op" in {
+    val opConfig = OpConfig(numSrcMax = 2, numDstMax = 2, archIdNum = 2)
+    val tableConfig = RegRenamingTableConfig(ptagNum = 4)
+
+    val renamingTable = new RegRenamingTable(tableConfig, opConfig)
+    val regFile = renamingTable.getRegFile
+
+    // insert 2 op
+    val op_0 = new Op(opConfig, 0, 2, Array(), Array(0, 1))
+    renamingTable.process(op_0)
+    renamingTable.commit(op_0)
+    val op_1 = new Op(opConfig, 1, 1, Array(1), Array(1))
+    renamingTable.process(op_1)
+
+    // before commit op_1
+    assert(renamingTable.getFreeList.size() == 1)
+    assert(!renamingTable.available())
+    assert(regFile.getRegFileEntry(1).getRegState == RegFileEntryState.COMMIT)
+    assert(regFile.getRegFileEntry(1).getRegArchId == 1)
+    assert(regFile.getRegFileEntry(1).getRegPtag == 1)
+    assert(regFile.getRegFileEntry(1).getPrevSameArchId == -1)
+
+    // after commit op_1
+    renamingTable.commit(op_1)
+    assert(renamingTable.getFreeList.size() == 2)
+    assert(renamingTable.available())
+    assert(regFile.getRegFileEntry(1).getRegState == RegFileEntryState.FREE)
+    assert(regFile.getRegFileEntry(1).getRegArchId == -1)
+    assert(regFile.getRegFileEntry(1).getRegPtag == 1)
+    assert(regFile.getRegFileEntry(1).getPrevSameArchId == -1)
+  }
 }

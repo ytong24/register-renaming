@@ -66,6 +66,8 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
     entry.setRegState(RegFileEntryState.COMMIT)
     // Release the Previous Entry With Same Architectural Register ID
     val prev_ptag = entry.getPrevSameArchId
+    if (prev_ptag == -1)
+      return
     val prev_entry = _regFile.getRegFileEntry(prev_ptag)
     prev_entry.setRegState(RegFileEntryState.DEAD)
     releaseEntry(prev_entry)
@@ -111,6 +113,7 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
 
   private def releaseEntry(entry: RegFileEntry): Unit = {
     // Reset the Register Entry
+    require(entry.getRegState == RegFileEntryState.DEAD)
     entry.setRegState(RegFileEntryState.FREE)
     entry.setRegArchId(-1)
     entry.setPrevSameArchId(-1)
