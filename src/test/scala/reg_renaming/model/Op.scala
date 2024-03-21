@@ -16,10 +16,23 @@ class Op(
           private val _archSrcIds: Array[Int],
           private val _archDstIds: Array[Int],
         ) {
-  // TODO: assert srcId < archIdNum
-  // TODO: assert dstId < archIdNum
   private var _ptagSrcIds: Array[Int] = Array.ofDim[Int](config.numSrcMax)
   private var _ptagDstIds: Array[Int] = Array.ofDim[Int](config.numDstMax)
+
+  for (i <- _archSrcIds.indices) {
+    require(_archSrcIds(i) < config.archIdNum)
+  }
+  for (i <- _archDstIds.indices) {
+    require(_archDstIds(i) < config.archIdNum)
+  }
+
+  // init with invalid index
+  for (i <- _ptagSrcIds.indices) {
+    _ptagSrcIds(i) = -1
+  }
+  for (i <- _ptagDstIds.indices) {
+    _ptagDstIds(i) = -1
+  }
 
   def getNumSrc: Int = _numSrc
 

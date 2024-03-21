@@ -93,9 +93,8 @@ class ModelTester extends AnyFlatSpec with ChiselScalatestTester {
   it should "initialize with default values" in {
     val config = OpConfig(numSrcMax = 10, numDstMax = 5, archIdNum = 3)
     val regMap = new RegMap(config)
-    // Check that all entries are initialized to 0
     for (i <- 0 until config.archIdNum) {
-      assert(regMap.getPtag(i) === 0, s"RegMap entry $i should be initialized to 0")
+      assert(regMap.getPtag(i) === -1, s"RegMap entry $i should be initialized to 0")
     }
   }
 
@@ -138,7 +137,9 @@ class ModelTester extends AnyFlatSpec with ChiselScalatestTester {
 
     val opInstance = new Op(opConfig, 0, 2, Array(), Array(0, 1))
     assert(renamingTable.available())
+    assert(renamingTable.getFreeList.size() == 8)
     renamingTable.process(opInstance)
+    assert(renamingTable.getFreeList.size() == 6)
   }
 
   it should "full when alloc all" in {
@@ -146,11 +147,82 @@ class ModelTester extends AnyFlatSpec with ChiselScalatestTester {
     val tableConfig = RegRenamingTableConfig(ptagNum = 8)
     val renamingTable = new RegRenamingTable(tableConfig, opConfig)
 
-    val opInstance = new Op(opConfig, 0, 2, Array(), Array(0, 1))
     for (i <- 0 until 4) {
+      val opInstance = new Op(opConfig, 0, 2, Array(), Array(0, 1))
       assert(renamingTable.available())
+      assert(renamingTable.getFreeList.size() == 8 - i * 2)
       renamingTable.process(opInstance)
     }
     assert(!renamingTable.available())
+  }
+
+  it should "correct data in op dynamic info" in {
+    val opConfig = OpConfig(numSrcMax = 2, numDstMax = 2, archIdNum = 2)
+    val tableConfig = RegRenamingTableConfig(ptagNum = 4)
+    val renamingTable = new RegRenamingTable(tableConfig, opConfig)
+
+    val op_0 = new Op(opConfig, 0, 2, Array(), Array(0, 1))
+    assert(renamingTable.available())
+    renamingTable.process(op_0)
+    assert(op_0.getPtagDstId(0) == 0)
+    assert(op_0.getPtagDstId(1) == 1)
+
+    val op_1 = new Op(opConfig, 1, 1, Array(1), Array(1))
+    assert(renamingTable.available())
+    renamingTable.process(op_1)
+    assert(op_1.getPtagSrcId(0) == 1)
+    assert(op_1.getPtagDstId(0) == 2)
+
+    assert(renamingTable.getFreeList.size() == 1)
+    assert(!renamingTable.available())
+  }
+
+  it should "correct data in register map" in {
+    val opConfig = OpConfig(numSrcMax = 2, numDstMax = 2, archIdNum = 2)
+    val tableConfig = RegRenamingTableConfig(ptagNum = 4)
+
+    val renamingTable = new RegRenamingTable(tableConfig, opConfig)
+    val regMap = renamingTable.getRegMap
+
+    val op_0 = new Op(opConfig, 0, 2, Array(), Array(0, 1))
+    renamingTable.process(op_0)
+    assert(regMap.getPtag(0) == 0)
+    assert(regMap.getPtag(1) == 1)
+
+    val op_1 = new Op(opConfig, 1, 1, Array(1), Array(1))
+    renamingTable.process(op_1)
+    assert(regMap.getPtag(0) == 0)
+    assert(regMap.getPtag(1) == 2)
+  }
+
+  it should "correct data in register file" in {
+    val opConfig = OpConfig(numSrcMax = 2, numDstMax = 2, archIdNum = 2)
+    val tableConfig = RegRenamingTableConfig(ptagNum = 4)
+
+    val renamingTable = new RegRenamingTable(tableConfig, opConfig)
+    val regFile = renamingTable.getRegFile
+
+    // first op
+    val op_0 = new Op(opConfig, 0, 2, Array(), Array(0, 1))
+    renamingTable.process(op_0)
+
+    assert(regFile.getRegFileEntry(0).getRegState == RegFileEntryState.ALLOC)
+    assert(regFile.getRegFileEntry(0).getRegArchId == 0)
+    assert(regFile.getRegFileEntry(0).getRegPtag == 0)
+    assert(regFile.getRegFileEntry(0).getPrevSameArchId == -1)
+
+    assert(regFile.getRegFileEntry(1).getRegState == RegFileEntryState.ALLOC)
+    assert(regFile.getRegFileEntry(1).getRegArchId == 1)
+    assert(regFile.getRegFileEntry(1).getRegPtag == 1)
+    assert(regFile.getRegFileEntry(1).getPrevSameArchId == -1)
+
+    // second op
+    val op_1 = new Op(opConfig, 1, 1, Array(1), Array(1))
+    renamingTable.process(op_1)
+
+    assert(regFile.getRegFileEntry(2).getRegState == RegFileEntryState.ALLOC)
+    assert(regFile.getRegFileEntry(2).getRegArchId == 1)
+    assert(regFile.getRegFileEntry(2).getRegPtag == 2)
+    assert(regFile.getRegFileEntry(2).getPrevSameArchId == 1)
   }
 }
