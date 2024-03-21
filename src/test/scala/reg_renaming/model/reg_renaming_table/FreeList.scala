@@ -24,7 +24,7 @@ class FreeList(config: RegRenamingTableConfig) {
     _freeListStack.pop()
   }
 
-  def size(): Int = {
+  def size: Int = {
     _freeListStack.size
   }
 }

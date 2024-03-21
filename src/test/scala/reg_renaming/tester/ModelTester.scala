@@ -12,24 +12,24 @@ class ModelTester extends AnyFlatSpec with ChiselScalatestTester {
   it should "be initialized with the correct size" in {
     val config = RegRenamingTableConfig(ptagNum = 5)
     val freeList = new FreeList(config)
-    assert(freeList.size() == config.ptagNum, "Initial FreeList size should be equal to ptagNum")
+    assert(freeList.size == config.ptagNum, "Initial FreeList size should be equal to ptagNum")
   }
 
   it should "decrease in size by one after a pop" in {
     val config = RegRenamingTableConfig(ptagNum = 5)
     val freeList = new FreeList(config)
-    val initialSize = freeList.size()
+    val initialSize = freeList.size
     freeList.pop()
-    assert(freeList.size() == initialSize - 1, "FreeList size should decrease by 1 after pop")
+    assert(freeList.size == initialSize - 1, "FreeList size should decrease by 1 after pop")
   }
 
   it should "increase in size by one after a push" in {
     val config = RegRenamingTableConfig(ptagNum = 5)
     val freeList = new FreeList(config)
-    val initialSize = freeList.size()
+    val initialSize = freeList.size
     val popped = freeList.pop()
     freeList.push(popped)
-    assert(freeList.size() == initialSize, "FreeList size should increase by 1 after push")
+    assert(freeList.size == initialSize, "FreeList size should increase by 1 after push")
   }
 
   it should "pop values within valid range" in {
@@ -42,10 +42,10 @@ class ModelTester extends AnyFlatSpec with ChiselScalatestTester {
   it should "restore its size after popping and then pushing" in {
     val config = RegRenamingTableConfig(ptagNum = 5)
     val freeList = new FreeList(config)
-    val initialSize = freeList.size()
+    val initialSize = freeList.size
     val popped = freeList.pop()
     freeList.push(popped)
-    assert(freeList.size() == initialSize, "FreeList size should be restored after pushing the popped element back")
+    assert(freeList.size == initialSize, "FreeList size should be restored after pushing the popped element back")
   }
 
   it should "throw an exception when popping from an empty FreeList" in {
@@ -137,9 +137,9 @@ class ModelTester extends AnyFlatSpec with ChiselScalatestTester {
 
     val opInstance = new Op(opConfig, 0, 2, Array(), Array(0, 1))
     assert(renamingTable.available())
-    assert(renamingTable.getFreeList.size() == 8)
+    assert(renamingTable.getFreeList.size == 8)
     renamingTable.process(opInstance)
-    assert(renamingTable.getFreeList.size() == 6)
+    assert(renamingTable.getFreeList.size == 6)
   }
 
   it should "full when alloc all" in {
@@ -150,7 +150,7 @@ class ModelTester extends AnyFlatSpec with ChiselScalatestTester {
     for (i <- 0 until 4) {
       val opInstance = new Op(opConfig, 0, 2, Array(), Array(0, 1))
       assert(renamingTable.available())
-      assert(renamingTable.getFreeList.size() == 8 - i * 2)
+      assert(renamingTable.getFreeList.size == 8 - i * 2)
       renamingTable.process(opInstance)
     }
     assert(!renamingTable.available())
@@ -173,7 +173,7 @@ class ModelTester extends AnyFlatSpec with ChiselScalatestTester {
     assert(op_1.getPtagSrcId(0) == 1)
     assert(op_1.getPtagDstId(0) == 2)
 
-    assert(renamingTable.getFreeList.size() == 1)
+    assert(renamingTable.getFreeList.size == 1)
     assert(!renamingTable.available())
   }
 
@@ -241,7 +241,7 @@ class ModelTester extends AnyFlatSpec with ChiselScalatestTester {
     renamingTable.process(op_1)
 
     // before commit op_1
-    assert(renamingTable.getFreeList.size() == 1)
+    assert(renamingTable.getFreeList.size == 1)
     assert(!renamingTable.available())
     assert(regFile.getRegFileEntry(1).getRegState == RegFileEntryState.COMMIT)
     assert(regFile.getRegFileEntry(1).getRegArchId == 1)
@@ -250,7 +250,7 @@ class ModelTester extends AnyFlatSpec with ChiselScalatestTester {
 
     // after commit op_1
     renamingTable.commit(op_1)
-    assert(renamingTable.getFreeList.size() == 2)
+    assert(renamingTable.getFreeList.size == 2)
     assert(renamingTable.available())
     assert(regFile.getRegFileEntry(1).getRegState == RegFileEntryState.FREE)
     assert(regFile.getRegFileEntry(1).getRegArchId == -1)

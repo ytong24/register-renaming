@@ -19,7 +19,7 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
   private var _freeList = new FreeList(tableConfig)
 
   def available(): Boolean = {
-    _freeList.size() >= opConfig.numDstMax
+    _freeList.size >= opConfig.numDstMax
   }
 
   def process(op: Op): Unit = {

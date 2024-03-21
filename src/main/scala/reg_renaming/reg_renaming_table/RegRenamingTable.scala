@@ -2,7 +2,7 @@ package reg_renaming.reg_renaming_table
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.ChiselEnum
+import chisel3.ChiselEnum
 import reg_renaming.{Op, OpConfig}
 
 case class RegRenamingTableConfig(ptagNum: Int)
