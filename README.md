@@ -34,51 +34,33 @@
 
 <br>
 
-<h2>Overview</h2>
-   We implemented Register Renaming, which is the allocation stage in the pipeline of the microarchitecture of processors.
-   Name dependencies are caused by the reuse of registers without involving any data dependencies. 
-   To maximize the instruction-level parallelism,Register Renaming entails changing the names of the register to avoid false dependencies.
+## Overview
+We implemented Register Renaming, which is the allocation stage in the pipeline of the microarchitecture of processors. Name dependencies are caused by the reuse of registers without involving any data dependencies. To maximize the instruction-level parallelism, Register Renaming entails changing the names of the register to avoid false dependencies.
 
-<h2>Verification</h2>
-<h3>Testing</h3>
-   Do the following command to run the test cases: <br>
-   ```bash
-   sbt test
-   ```
-<h3>Scenario</h3>
-   <li>FETCH -> <b>RENAMING</b> -> ISSUE -> EXECUTE -> COMMIT
+## Verification
+### Testing
+Do the following command to run the test cases:
+```bash
+sbt test
+```
+### Scenario
+ - FETCH -> <b>RENAMING</b> -> ISSUE -> EXECUTE -> COMMIT
 
-<h2>Design</h2>
-   <h3>Structure</h3>
-      <ul>
-        <li>Op</li>
-        <li>RegisterRenamingTable
-            <ul>
-                <li>RegMap</li>
-                <li>RegFile</li>
-                <li>FreeList</li>
-            </ul>
-        </li>
-      </ul>
+## Design
+### Structure
+- Op
+- RegisterRenamingTable
+    - RegMap
+    - RegFile
+    - FreeList
 
-   <h3>Interface</h3>
-      <ul>
-        <li>Available
-            <ul>
-                <li>Before FETCH stage, the processor first checks if there are enough free registers.</li>
-            </ul>
-        </li>
-        <li>Process
-            <ul>
-                <li>After an operand is fetched, it reads data dependency and applies allocation in the RENAMING stage.</li>
-            </ul>
-        </li>
-        <li>Commit
-            <ul>
-                <li>Once an operand is retired, the previous registers shared same architectural ids can be released.</li>
-            </ul>
-        </li>
-      </ul>
+### Interface
+- Available
+    - Before FETCH stage, the processor first checks if there are enough free registers.
+- Process
+    - After an operand is fetched, it reads data dependency and applies allocation in the RENAMING stage.
+- Commit
+    - Once an operand is retired, the previous registers shared same architectural ids can be released.
 
 ## Close the Loop
 
@@ -129,9 +111,5 @@ The project's foundation is a merged register file for register renaming, which 
 - **Functionality:** Ensures committed operations free up resources and maintain system integrity.
 - **Testing:** Confirm the correct functioning of the commit process, updates in RegMap and RegFile, and ptags freeing.
 
-
-
-
-<h2>License</h2>
-This Project is under license from MIT. <br>
-Made by Yan Tong and Yinyuan Zhao for CSE 228A - Agile Hardware Design
+## License
+This Project is made by Yan Tong and Yinyuan Zhao for CSE 228A - Agile Hardware Design
