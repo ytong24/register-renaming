@@ -14,8 +14,12 @@ object OpCommitState extends ChiselEnum {
   val idle, commit = Value
 }
 
+object ReadSrcState extends ChiselEnum {
+  val idle, findPtag, getEntry, readEntry = Value
+}
+
 object WriteDstState extends ChiselEnum {
-  val idle, getPtag, getEntry, writeEntry = Value
+  val idle, newPtag, getEntry, writeEntry = Value
 }
 
 class RegRenamingTableIO(opConfig: OpConfig) extends Bundle {
@@ -41,11 +45,6 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
   io.available := false.B
   io.op.ptagSrcIds := ptagSrcIds
   io.op.ptagDstIds := ptagDstIds
-  //  io.op.out.ptagSrcIds := ptagSrcIds
-  //  io.op.out.ptagDstIds := ptagDstIds
-  //  io.op.bits.out.ptagSrcIds := ptagSrcIds
-  //  io.op.bits.out.ptagDstIds := ptagDstIds
-  //  io.op.valid := false.B
 
   /** initialize regMap */
   val regMapReadIndex = WireDefault(UInt(log2Ceil(opConfig.archIdNum + 1).W), 0.U)
@@ -89,7 +88,9 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
 
   /** helper variables for helper functions */
   private val opProcessState = RegInit(OpProcessState.idle)
+  private val readSrcState = RegInit(ReadSrcState.idle)
   private val writeDstState = RegInit(WriteDstState.idle)
+
   private val opCommitState = RegInit(OpCommitState.idle)
   private val srcIndex = RegInit(0.U(log2Ceil(opConfig.numSrcMax + 1).W))
   private val dstIndex = RegInit(0.U(log2Ceil(opConfig.numDstMax + 1).W))
@@ -97,31 +98,24 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
 
   switch(io.mode) {
     is(0.U) {
-      //      io.done := processOp(io.op.bits)
-      ioDone := processOp(io.op)
+      processOp(io.op)
     }
     is(1.U) {
-      //      io.done := commitOp(io.op.bits)
-      ioDone := commitOp(io.op)
+      commitOp(io.op)
     }
     is(2.U) {
       // available when the number of unused slots in the freeList exceeds the op's requirement
-      //      io.available := freeList.io.size >= io.op.bits.numDst
       io.available := freeList.io.size >= io.op.numDst
     }
   }
 
 
   /** helper functions for op process */
-  private def processOp(op: Op): Bool = {
-    //    val done = Wire(Bool())
-    //    done := false.B
-    val done = RegInit(false.B)
-
+  private def processOp(op: Op): Unit = {
     switch(opProcessState) {
       is(OpProcessState.idle) {
         printf(p"State transition: idle -> readSrc\n")
-        done := false.B
+        ioDone := false.B
         // start to readSrc, initialize srcIndex and dstIndex
         opProcessState := OpProcessState.readSrc
         srcIndex := 0.U
@@ -129,11 +123,12 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
       }
 
       is(OpProcessState.readSrc) {
-        srcIndex := readSrc(op, srcIndex)
+        readSrc(op, srcIndex)
         printf(p"srcIndex: ${srcIndex}\n")
         when(srcIndex === op.numSrc) {
           printf(p"State transition: readSrc -> writeDst\n")
           opProcessState := OpProcessState.writeDst
+          srcIndex := 0.U
         }
       }
 
@@ -143,70 +138,85 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
         when(dstIndex === op.numDst) {
           printf(p"State transition: writeDst -> done\n")
           opProcessState := OpProcessState.done
+          dstIndex := 0.U
         }
       }
 
       is(OpProcessState.done) {
         opProcessState := OpProcessState.idle
-        done := true.B
+        ioDone := true.B
       }
     }
-    done
   }
 
-  private def readSrc(op: Op, srcIndex: UInt): UInt = {
-    Mux(srcIndex < op.numSrc,
-      {
-        // Get the archSrcId
+  private def readSrc(op: Op, srcIndex: UInt): Unit = {
+    val ptag = Reg(UInt(log2Ceil(opConfig.numDstMax).W))
+    val entry = Reg(new RegFileEntry(log2Ceil(opConfig.numDstMax)))
+
+    switch(readSrcState) {
+      is(ReadSrcState.idle) {
+        when(srcIndex < op.numSrc) {
+          readSrcState := ReadSrcState.findPtag
+          printf(p"readSrcState transition: idle -> findPtag\n")
+        }
+      }
+
+      is(ReadSrcState.findPtag) {
         val archSrcId = op.archSrcIds(srcIndex)
+        printf(p"archSrcId: ${archSrcId}\n")
+        printf(p"op.archSrcIds: ${op.archSrcIds}\n")
+        findPtag(archSrcId, ptag)
+        readSrcState := ReadSrcState.getEntry
+        printf(p"readSrcState transition: findPtag -> getEntry\n")
+      }
 
-        // Get the ptag from regMap
-        val entry = lookupEntry(archSrcId)
+      is(ReadSrcState.getEntry) {
+        printf(p"ptag: ${ptag}\n")
+        entry := getEntry(ptag)
+        readSrcState := ReadSrcState.readEntry
+        printf(p"readSrcState transition: getEntry -> readEntry\n")
+      }
 
-        // Get the entry from regFile and set the ptagSrcId in op
-        readEntry(op, entry, srcIndex)
-
-        srcIndex +& 1.U
-      },
-      srcIndex
-    )
+      is(ReadSrcState.readEntry) {
+        readEntry(srcIndex, ptag)
+        srcIndex := srcIndex +& 1.U
+        readSrcState := ReadSrcState.idle
+        printf(p"readSrcState transition: readEntry -> idle\n")
+      }
+    }
   }
 
-  private def lookupEntry(archSrcId: UInt): RegFileEntry = {
+  private def findPtag(archSrcId: UInt, ptagReg: UInt): Unit = {
     // Get the ptag from regMap
     regMapReadIndex := archSrcId
     regMapWriteEnable := false.B
-    val ptag = regMap.io.readData
-
-    // Get the entry from regFile
-    regFileIndex := ptag
-    regFileWriteEnable := false.B
-    regFile.io.readValue
+    ptagReg := regMap.io.readData
   }
 
-  private def readEntry(op: Op, entry: RegFileEntry, srcIndex: UInt): Unit = {
-    val ptagSrcId = Wire(UInt(log2Ceil(tableConfig.ptagNum + 1).W))
-    ptagSrcId := entry.regPtag
-    ptagSrcIds(srcIndex) := ptagSrcId
+  private def readEntry(srcIndex: UInt, ptag: UInt): Unit = {
+    ptagSrcIds(srcIndex) := ptag
   }
 
 
   private def writeDst(op: Op, dstIndex: UInt): Unit = {
-    val ptag = Reg(UInt(log2Ceil(opConfig.numDstMax).W))
+    val ptag = Reg(UInt(log2Ceil(opConfig.numDstMax + 1).W))
     val entry = Reg(new RegFileEntry(log2Ceil(opConfig.numDstMax)))
 
     switch(writeDstState) {
       is(WriteDstState.idle) {
         when(dstIndex < op.numDst) {
-          writeDstState := WriteDstState.getPtag
-          printf(p"writeDstState transition: idle -> getPtag\n")
+          writeDstState := WriteDstState.newPtag
+          freeListPush := false.B
+          freeListPop := true.B
+          ptag := 0.U
+          printf(p"writeDstState transition: idle -> newPtag\n")
         }
       }
 
-      is(WriteDstState.getPtag) {
-        getPtag(ptag)
+      is(WriteDstState.newPtag) {
+        ptag := freeList.io.ptagPopped
         writeDstState := WriteDstState.getEntry
-        printf(p"writeDstState transition: getPtag -> getEntry\n")
+        printf(p"writeDstState transition: newPtag -> getEntry\n")
       }
 
       is(WriteDstState.getEntry) {
@@ -220,15 +230,9 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
         writeEntry(op, entry, dstIndex, ptag)
         dstIndex := dstIndex +& 1.U
         writeDstState := WriteDstState.idle
-        printf(p"writeDstState transition: writeEntry -> getEntry\n")
+        printf(p"writeDstState transition: writeEntry -> idle\n")
       }
-
     }
-  }
-
-  private def getPtag(ptagReg: UInt): Unit = {
-    freeListPop := true.B
-    ptagReg := freeList.io.ptagPopped
   }
 
   private def getEntry(ptag: UInt): RegFileEntry = {
@@ -239,11 +243,10 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
     val readEntry = regFile.io.readValue
 
     // Set the entry state as ALLOC
-    entry.regState := RegFileEntryState.ALLOC
     entry.regPtag := readEntry.regPtag
     entry.regArchId := readEntry.regArchId
     entry.prevSameArchId := readEntry.prevSameArchId
-
+    entry.regState := readEntry.regState
     entry
   }
 
@@ -251,6 +254,7 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
     // Write the ptag to op.ptagDstIds
     ptagDstIds(dstIndex) := ptag
 
+    entry.regState := RegFileEntryState.ALLOC
     // Track the previous ptag with the same archId
     val archId = op.archDstIds(dstIndex)
     entry.regArchId := archId
@@ -271,9 +275,8 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
   }
 
   /** helper functions for op commit * */
-  def commitOp(op: Op): Bool = {
-    val commitDone = Wire(Bool())
-    commitDone := false.B
+  def commitOp(op: Op): Unit = {
+    ioDone := false.B
 
     switch(opCommitState) {
       is(OpCommitState.idle) {
@@ -288,12 +291,10 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
           dstIndex := dstIndex +& 1.U
         }.otherwise {
           opCommitState := OpCommitState.idle
-          commitDone := true.B
+          ioDone := true.B
         }
       }
     }
-
-    commitDone
   }
 
   private def removePrev(ptag: UInt): Unit = {
