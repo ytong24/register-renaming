@@ -10,7 +10,7 @@ package reg_renaming.model.reg_renaming_table
 import reg_renaming.reg_renaming_table.RegRenamingTableConfig
 
 object RegFileEntryState extends Enumeration {
-  val FREE, ALLOC, PRODUCE, COMMIT, DEAD = Value
+  val FREE, ALLOC, COMMIT, DEAD = Value
 }
 
 class RegFileEntry(

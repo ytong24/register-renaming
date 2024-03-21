@@ -4,7 +4,7 @@ import chisel3._
 import chisel3.util._
 
 object RegFileEntryState extends ChiselEnum {
-  val FREE, ALLOC, PRODUCE, COMMIT, DEAD = Value
+  val FREE, ALLOC, COMMIT, DEAD = Value
 }
 
 class RegFileEntry(w: Int) extends Bundle {
@@ -22,7 +22,14 @@ class RegFile(ptagNum: Int) extends Module {
     val readValue = Output(new RegFileEntry(log2Ceil(ptagNum)))
   })
 
-  val regFileEntries = Reg(Vec(ptagNum, new RegFileEntry(log2Ceil(ptagNum))))
+  val regFileEntries = RegInit(VecInit((0 until ptagNum).map { i =>
+    val entry = Wire(new RegFileEntry(log2Ceil(ptagNum)))
+    entry.regPtag := i.U
+    entry.regArchId := 0.U
+    entry.prevSameArchId := 0.U
+    entry.regState := RegFileEntryState.FREE
+    entry
+  }))
   val readValueReg = Reg(new RegFileEntry(log2Ceil(ptagNum)))
 
   readValueReg := regFileEntries(io.index)
