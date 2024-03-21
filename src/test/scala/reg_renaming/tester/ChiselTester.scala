@@ -186,7 +186,6 @@ class ChiselTester extends AnyFlatSpec with ChiselScalatestTester {
 
       while (!dut.io.done.peek().litToBoolean) {
         dut.clock.step()
-        print("==========\n")
       }
 
       dut.io.op.ptagDstIds(0).expect(0.U) // p0
@@ -206,7 +205,6 @@ class ChiselTester extends AnyFlatSpec with ChiselScalatestTester {
       dut.io.mode.poke(0.U)
       while (!dut.io.done.peek().litToBoolean) {
         dut.clock.step()
-        print("==========\n")
       }
       dut.io.op.ptagDstIds(0).expect(0.U) // p0
       dut.io.op.ptagDstIds(1).expect(1.U) // p1
@@ -226,7 +224,6 @@ class ChiselTester extends AnyFlatSpec with ChiselScalatestTester {
 
       while (!dut.io.done.peek().litToBoolean) {
         dut.clock.step()
-        print("==========\n")
       }
 
       dut.io.op.ptagSrcIds(0).expect(0.U) // p0
@@ -247,7 +244,6 @@ class ChiselTester extends AnyFlatSpec with ChiselScalatestTester {
       dut.io.mode.poke(0.U)
       while (!dut.io.done.peek().litToBoolean) {
         dut.clock.step()
-        print("==========\n")
       }
       dut.io.op.ptagDstIds(0).expect(0.U) // p0
       dut.io.op.ptagDstIds(1).expect(1.U) // p1
@@ -259,7 +255,6 @@ class ChiselTester extends AnyFlatSpec with ChiselScalatestTester {
       dut.io.mode.poke(1)
       while (!dut.io.done.peek().litToBoolean) {
         dut.clock.step()
-        print("==========\n")
       }
 
       // process an op with 0 src and 1 dst, should reuse p0
@@ -270,7 +265,6 @@ class ChiselTester extends AnyFlatSpec with ChiselScalatestTester {
       dut.io.mode.poke(0.U)
       while (!dut.io.done.peek().litToBoolean) {
         dut.clock.step()
-        print("==========\n")
       }
 
       dut.io.op.ptagDstIds(0).expect(0.U) // reuse p0

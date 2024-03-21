@@ -2,7 +2,7 @@ package reg_renaming.reg_renaming_table
 
 import chisel3._
 import chisel3.util._
-import chisel3.ChiselEnum
+import chisel3.experimental.ChiselEnum
 import reg_renaming.{Op, OpConfig}
 
 case class RegRenamingTableConfig(ptagNum: Int)
@@ -116,7 +116,6 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
   private def processOp(op: Op): Unit = {
     switch(opProcessState) {
       is(OpProcessState.idle) {
-        printf(p"State transition: idle -> readSrc\n")
         ioDone := false.B
         // start to readSrc, initialize srcIndex and dstIndex
         opProcessState := OpProcessState.readSrc
@@ -126,9 +125,7 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
 
       is(OpProcessState.readSrc) {
         readSrc(op, srcIndex)
-        printf(p"srcIndex: ${srcIndex}\n")
         when(srcIndex === op.numSrc) {
-          printf(p"State transition: readSrc -> writeDst\n")
           opProcessState := OpProcessState.writeDst
           srcIndex := 0.U
         }
@@ -136,9 +133,7 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
 
       is(OpProcessState.writeDst) {
         writeDst(op, dstIndex)
-        printf(p"dstIndex: ${dstIndex}\n")
         when(dstIndex === op.numDst) {
-          printf(p"State transition: writeDst -> done\n")
           opProcessState := OpProcessState.done
           dstIndex := 0.U
         }
@@ -159,31 +154,24 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
       is(ReadSrcState.idle) {
         when(srcIndex < op.numSrc) {
           readSrcState := ReadSrcState.findPtag
-          printf(p"readSrcState transition: idle -> findPtag\n")
         }
       }
 
       is(ReadSrcState.findPtag) {
         val archSrcId = op.archSrcIds(srcIndex)
-        printf(p"archSrcId: ${archSrcId}\n")
-        printf(p"op.archSrcIds: ${op.archSrcIds}\n")
         findPtag(archSrcId, readSrcPtag)
         readSrcState := ReadSrcState.getEntry
-        printf(p"readSrcState transition: findPtag -> getEntry\n")
       }
 
       is(ReadSrcState.getEntry) {
-        printf(p"ptag: ${readSrcPtag}\n")
         entry := getEntry(readSrcPtag)
         readSrcState := ReadSrcState.readEntry
-        printf(p"readSrcState transition: getEntry -> readEntry\n")
       }
 
       is(ReadSrcState.readEntry) {
         readEntry(srcIndex, readSrcPtag)
         srcIndex := srcIndex +& 1.U
         readSrcState := ReadSrcState.idle
-        printf(p"readSrcState transition: readEntry -> idle\n")
       }
     }
   }
@@ -211,28 +199,23 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
           freeListPush := false.B
           freeListPop := true.B
           writeDstPtag := 0.U
-          printf(p"writeDstState transition: idle -> newPtag\n")
         }
       }
 
       is(WriteDstState.newPtag) {
         writeDstPtag := freeList.io.ptagPopped
         writeDstState := WriteDstState.getEntry
-        printf(p"writeDstState transition: newPtag -> getEntry\n")
       }
 
       is(WriteDstState.getEntry) {
-        printf(p"ptag: ${writeDstPtag}\n")
         entry := getEntry(writeDstPtag)
         writeDstState := WriteDstState.writeEntry
-        printf(p"writeDstState transition: getEntry -> writeEntry\n")
       }
 
       is(WriteDstState.writeEntry) {
         writeEntry(op, entry, dstIndex, writeDstPtag)
         dstIndex := dstIndex +& 1.U
         writeDstState := WriteDstState.idle
-        printf(p"writeDstState transition: writeEntry -> idle\n")
       }
     }
   }
