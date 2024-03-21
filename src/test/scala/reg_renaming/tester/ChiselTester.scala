@@ -82,8 +82,23 @@ class ChiselTester extends AnyFlatSpec with ChiselScalatestTester {
 
 
   behavior of "RegFile"
+  it should "each RegFileEntry has default value" in {
+    test(new RegFile(archIdNum = 4, ptagNum = 8)) { dut =>
+      for (i <- 0 until 8) {
+        dut.io.index.poke(i.U)
+        dut.io.writeEnable.poke(false.B)
+        dut.clock.step()
+
+        dut.io.readValue.regPtag.expect(i.U)
+        dut.io.readValue.regArchId.expect(4.U)
+        dut.io.readValue.prevSameArchId.expect(4.U)
+        dut.io.readValue.regState.expect(RegFileEntryState.FREE)
+      }
+    }
+  }
+
   it should "return a valid RegFileEntry for a valid index" in {
-    test(new RegFile(ptagNum = 5)) { dut =>
+    test(new RegFile(archIdNum = 5, ptagNum = 5)) { dut =>
       dut.io.index.poke(0.U)
       dut.io.writeEnable.poke(true.B)
       dut.io.writeValue.regPtag.poke(1.U)
@@ -104,7 +119,7 @@ class ChiselTester extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "correctly set a RegFileEntry at a specific index" in {
-    test(new RegFile(ptagNum = 5)) { dut =>
+    test(new RegFile(archIdNum = 5, ptagNum = 5)) { dut =>
       dut.io.index.poke(1.U)
       dut.io.writeEnable.poke(true.B)
       dut.io.writeValue.regPtag.poke(2.U)
@@ -127,17 +142,17 @@ class ChiselTester extends AnyFlatSpec with ChiselScalatestTester {
 
   behavior of "RegMap"
   it should "initialize with default values" in {
-    test(new RegMap(archIdNum = 3)) { dut =>
-      for (i <- 0 until 3) {
+    test(new RegMap(archIdNum = 4, ptagNum = 8)) { dut =>
+      for (i <- 0 until 4) {
         dut.io.readIndex.poke(i.U)
         dut.clock.step()
-        dut.io.readData.expect(0.U, s"RegMap entry $i should be initialized to 0")
+        dut.io.readData.expect(8.U, s"RegMap entry $i should be initialized to invalid value")
       }
     }
   }
 
   it should "set and get a ptag value correctly" in {
-    test(new RegMap(archIdNum = 3)) { dut =>
+    test(new RegMap(archIdNum = 3, ptagNum = 3)) { dut =>
       val testIndex = 2.U // Arbitrary index to test
       val testValue = 1.U // Arbitrary value to set
 

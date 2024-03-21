@@ -32,8 +32,8 @@ class RegRenamingTableIO(opConfig: OpConfig) extends Bundle {
 class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) extends Module {
   val io = IO(new RegRenamingTableIO(opConfig))
 
-  val regMap = Module(new RegMap(opConfig.archIdNum))
-  val regFile = Module(new RegFile(tableConfig.ptagNum))
+  val regMap = Module(new RegMap(opConfig.archIdNum, tableConfig.ptagNum))
+  val regFile = Module(new RegFile(opConfig.archIdNum, tableConfig.ptagNum))
   val freeList = Module(new FreeList(tableConfig.ptagNum))
 
   val ptagSrcIds = RegInit(VecInit(Seq.fill(opConfig.numSrcMax)(0.U(log2Ceil(tableConfig.ptagNum + 1).W))))
@@ -76,7 +76,7 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
   val regFileWriteEnable = Wire(Bool())
   regFileWriteEnable := false.B
 
-  val regFileWriteValue = Wire(new RegFileEntry(log2Ceil(tableConfig.ptagNum)))
+  val regFileWriteValue = Wire(new RegFileEntry(log2Ceil(opConfig.archIdNum), log2Ceil(tableConfig.ptagNum)))
   regFileWriteValue.regPtag := 0.U
   regFileWriteValue.regArchId := 0.U
   regFileWriteValue.prevSameArchId := 0.U
@@ -151,7 +151,7 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
 
   private def readSrc(op: Op, srcIndex: UInt): Unit = {
     val readSrcPtag = Reg(UInt(log2Ceil(opConfig.numDstMax+1).W))
-    val entry = Reg(new RegFileEntry(log2Ceil(opConfig.numDstMax)))
+    val entry = Reg(new RegFileEntry(log2Ceil(opConfig.archIdNum), log2Ceil(opConfig.numDstMax)))
 
     switch(readSrcState) {
       is(ReadSrcState.idle) {
@@ -200,7 +200,7 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
 
   private def writeDst(op: Op, dstIndex: UInt): Unit = {
     val writeDstPtag = Reg(UInt(log2Ceil(opConfig.numDstMax + 1).W))
-    val entry = Reg(new RegFileEntry(log2Ceil(opConfig.numDstMax)))
+    val entry = Reg(new RegFileEntry(log2Ceil(opConfig.archIdNum), log2Ceil(opConfig.numDstMax)))
 
     switch(writeDstState) {
       is(WriteDstState.idle) {
@@ -239,7 +239,7 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
     // Get the entry from regFile
     regFileIndex := ptag
     regFileWriteEnable := false.B
-    val entry = Wire(new RegFileEntry(log2Ceil(opConfig.numDstMax)))
+    val entry = Wire(new RegFileEntry(log2Ceil(opConfig.archIdNum), log2Ceil(opConfig.numDstMax)))
     val readEntry = regFile.io.readValue
 
     // Set the entry state as ALLOC
@@ -301,7 +301,7 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
     // Set current entry state as COMMIT
     regFileIndex := ptag
     regFileWriteEnable := true.B
-    val entry = Wire(new RegFileEntry(log2Ceil(opConfig.numDstMax)))
+    val entry = Wire(new RegFileEntry(log2Ceil(opConfig.archIdNum), log2Ceil(opConfig.numDstMax)))
     entry := regFile.io.readValue
     entry.regState := RegFileEntryState.COMMIT
     regFileWriteValue := entry
@@ -309,7 +309,7 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
     // Release the previous entry with the same architectural register ID
     val prevPtag = entry.prevSameArchId
     regFileIndex := prevPtag
-    val prevEntry = Wire(new RegFileEntry(log2Ceil(opConfig.numDstMax)))
+    val prevEntry = Wire(new RegFileEntry(log2Ceil(opConfig.archIdNum), log2Ceil(opConfig.numDstMax)))
     prevEntry := regFile.io.readValue
     prevEntry.regState := RegFileEntryState.DEAD
     regFileWriteValue := prevEntry
