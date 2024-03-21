@@ -13,15 +13,5 @@ class Op(config: OpConfig) extends Bundle {
 
   val ptagSrcIds = Output(Vec(config.numSrcMax, UInt(log2Ceil(config.numSrcMax + 1).W)))
   val ptagDstIds = Output(Vec(config.numDstMax, UInt(log2Ceil(config.numDstMax + 1).W)))
-  //  val in = new Bundle {
-  //    val numSrc = Input(UInt(log2Ceil(config.numSrcMax + 1).W))
-  //    val numDst = Input(UInt(log2Ceil(config.numDstMax + 1).W))
-  //    val archSrcIds = Input(Vec(config.numSrcMax, UInt(log2Ceil(config.archIdNum).W)))
-  //    val archDstIds = Input(Vec(config.numDstMax, UInt(log2Ceil(config.archIdNum).W)))
-  //  }
-  //  val out = new Bundle {
-  //    val ptagSrcIds = Output(Vec(config.numSrcMax, UInt(log2Ceil(config.numSrcMax).W)))
-  //    val ptagDstIds = Output(Vec(config.numDstMax, UInt(log2Ceil(config.numDstMax).W)))
-  //  }
 }
 

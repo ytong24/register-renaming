@@ -12,24 +12,24 @@ class FreeList(val ptagNum: Int) extends Module {
     val size = Output(UInt(log2Ceil(ptagNum + 1).W))
   })
 
-  // elements should be 0..ptagNum-1
-  val stack = RegInit(VecInit((0 until ptagNum).map(_.U(log2Ceil(ptagNum).W))))
+  // elements should be 1..ptagNum
+  val stack = RegInit(VecInit((1 to ptagNum).map(_.U(log2Ceil(ptagNum + 1).W))))
   val pointer = RegInit(0.U(log2Ceil(ptagNum + 1).W))
-  val popValue = RegInit(0.U(log2Ceil(ptagNum).W))
+  val popValue = RegInit(0.U(log2Ceil(ptagNum + 1).W))
 
   // Push operation
   when(io.push && !io.pop && pointer > 0.U) {
-    stack(pointer - 1.U) := io.ptagToPush
-    pointer := pointer - 1.U
+    stack(pointer -& 1.U) := io.ptagToPush // use -& or +& to avoid overflow
+    pointer := pointer -& 1.U // use -& or +& to avoid overflow
   }
 
   // Pop operation
   when(io.pop && !io.push && pointer < ptagNum.U) {
-    pointer := pointer + 1.U
+    pointer := pointer +& 1.U
     popValue := stack(pointer)
   }
 
   // Update output
-  io.size := ptagNum.U - pointer
+  io.size := ptagNum.U -& pointer
   io.ptagPopped := popValue
 }
