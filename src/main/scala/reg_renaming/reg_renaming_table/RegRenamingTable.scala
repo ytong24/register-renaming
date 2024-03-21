@@ -40,9 +40,10 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
   val ptagDstIds = RegInit(VecInit(Seq.fill(opConfig.numDstMax)(0.U(log2Ceil(tableConfig.ptagNum + 1).W))))
 
   val ioDone = RegInit(false.B)
+  val ioAvailable = RegInit(false.B)
 
   io.done := ioDone
-  io.available := false.B
+  io.available := ioAvailable
   io.op.ptagSrcIds := ptagSrcIds
   io.op.ptagDstIds := ptagDstIds
 
@@ -105,7 +106,7 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
     }
     is(2.U) {
       // available when the number of unused slots in the freeList exceeds the op's requirement
-      io.available := freeList.io.size >= io.op.numDst
+      ioAvailable := freeList.io.size >= io.op.numDst
     }
   }
 
@@ -150,7 +151,7 @@ class RegRenamingTable(tableConfig: RegRenamingTableConfig, opConfig: OpConfig) 
   }
 
   private def readSrc(op: Op, srcIndex: UInt): Unit = {
-    val readSrcPtag = Reg(UInt(log2Ceil(opConfig.numDstMax+1).W))
+    val readSrcPtag = Reg(UInt(log2Ceil(opConfig.numDstMax + 1).W))
     val entry = Reg(new RegFileEntry(log2Ceil(opConfig.archIdNum), log2Ceil(opConfig.numDstMax)))
 
     switch(readSrcState) {
