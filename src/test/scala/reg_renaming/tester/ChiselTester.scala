@@ -72,7 +72,7 @@ class ChiselTester extends AnyFlatSpec with ChiselScalatestTester {
         dut.io.pop.poke(true.B)
         dut.clock.step()
 
-        val expectedValue = i.U
+        val expectedValue = (i - 1).U
         dut.io.ptagPopped.expect(expectedValue, s"Expected $expectedValue")
       }
 
